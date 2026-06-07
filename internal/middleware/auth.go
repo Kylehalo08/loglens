@@ -12,6 +12,7 @@ import (
 const (
 	ContextKeyUserID = "userID"
 	ContextKeyRole   = "role"
+	ContextKeyOrgRole = "orgRole"
 )
 
 func RequireAuth(tokens auth.TokenManager) echo.MiddlewareFunc {

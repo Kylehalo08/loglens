@@ -8,6 +8,7 @@ import (
 	"loglens/internal/auth"
 	"loglens/internal/db"
 	"loglens/internal/middleware"
+	"loglens/internal/org"
 	"loglens/internal/user"
 
 	"github.com/joho/godotenv"
@@ -43,7 +44,12 @@ func main() {
 		log.Fatalf("failed to initialize user service: %v", err)
 	}
 
-	handler := user.NewHandler(service)
+	userHandler := user.NewHandler(service)
+
+	orgRepo := org.NewPostgresRepository(pool)
+	orgCache := org.NewRedisInviteCache(redisStore)
+	orgService := org.NewService(orgRepo, tokenService, orgCache)
+	orgHandler := org.NewHandler(orgService)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -51,10 +57,19 @@ func main() {
 	e.Use(echomiddleware.Logger())
 
 	authGroup := e.Group("/auth")
-	authGroup.POST("/register", handler.Register)
-	authGroup.POST("/login", handler.Login)
-	authGroup.POST("/refresh", handler.Refresh)
-	authGroup.POST("/logout", handler.Logout, middleware.RequireAuth(tokenService))
+	authGroup.POST("/register", userHandler.Register)
+	authGroup.POST("/login", userHandler.Login)
+	authGroup.POST("/refresh", userHandler.Refresh)
+	authGroup.POST("/logout", userHandler.Logout, middleware.RequireAuth(tokenService))
+
+	orgsGroup := e.Group("/orgs", middleware.RequireAuth(tokenService))
+	orgsGroup.POST("", orgHandler.CreateOrganization)
+	orgsGroup.GET("", orgHandler.ListMyOrgs)
+	orgsGroup.POST("/join/token", orgHandler.JoinViaToken)
+	orgsGroup.POST("/join/code", orgHandler.JoinViaCode)
+	orgsGroup.GET("/:id", orgHandler.GetOrganization)
+	orgsGroup.POST("/:id/invites", orgHandler.SendEmailInvite, org.RequireOrgAdmin(orgService))
+	orgsGroup.POST("/:id/invite-codes", orgHandler.GenerateInviteCode, org.RequireOrgAdmin(orgService))
 
 	port := os.Getenv("PORT")
 	if port == "" {

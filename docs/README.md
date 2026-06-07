@@ -32,3 +32,12 @@ When adding a new feature, create a `.md` file with:
 |--------------------|-------------|------------------------------------|
 | auth.md            | implemented | Register, login, refresh, logout   |
 | infrastructure.md  | implemented | Postgres, Redis, docker-compose    |
+
+
+
+open -a Docker
+# 2. Start DB containers
+cd /Users/madhavmaheshwari/loglens
+docker compose up -d
+# 3. Start API
+go run ./cmd/api
