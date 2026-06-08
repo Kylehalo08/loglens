@@ -28,10 +28,12 @@ When adding a new feature, create a `.md` file with:
 
 ## Current features
 
-| File               | Status      | Description                        |
-|--------------------|-------------|------------------------------------|
-| auth.md            | implemented | Register, login, refresh, logout   |
-| infrastructure.md  | implemented | Postgres, Redis, docker-compose    |
+| File               | Status      | Description                                        |
+|--------------------|-------------|----------------------------------------------------|
+| auth.md            | implemented | Register, login, refresh, logout                   |
+| infrastructure.md  | implemented | Postgres, Redis, docker-compose                    |
+| organisation.md    | implemented | Orgs, members, invites, RBAC roles                 |
+| services.md        | implemented | Service CRUD, API keys, audit events               |
 
 
 
