@@ -34,6 +34,7 @@ When adding a new feature, create a `.md` file with:
 | infrastructure.md  | implemented | Postgres, Redis, docker-compose                    |
 | organisation.md    | implemented | Orgs, members, invites, RBAC roles                 |
 | services.md        | implemented | Service CRUD, API keys, audit events               |
+| telemetry.md       | implemented | Log ingest, Kafka, storage, WebSocket stream       |
 
 
 

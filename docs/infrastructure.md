@@ -9,10 +9,11 @@ Local development stack with Postgres (required) and Redis (optional). Environme
 
 ## Services (docker-compose)
 
-| Service  | Image        | Port  | Credentials              |
-|----------|--------------|-------|--------------------------|
-| postgres | postgres:16  | 5432  | loglens / loglens / loglens |
-| redis    | redis:7      | 6379  | no auth                  |
+| Service  | Image           | Port  | Credentials              |
+|----------|-----------------|-------|--------------------------|
+| postgres | postgres:16     | 5432  | loglens / loglens / loglens |
+| redis    | redis:7         | 6379  | no auth                  |
+| kafka    | redpanda v24.2.4 (Kafka API) | 9092 | no auth (dev) |
 
 Start:
 ```bash
@@ -57,6 +58,8 @@ psql $DATABASE_URL -f migrations/002_create_refresh_tokens.sql
 |-----------|--------------------------------------|
 | 001       | `users` table with pgcrypto UUIDs    |
 | 002       | `refresh_tokens` table + user_id index |
+| 003–009   | orgs, services, api keys, audit      |
+| 010       | `logs` table + search indexes        |
 
 No migration runner is integrated yet.
 

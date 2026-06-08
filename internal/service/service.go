@@ -12,17 +12,23 @@ import (
 
 const maxServiceNameLen = 255
 
-type Service struct {
-	repo   Repository
-	audit  audit.Writer
-	orgAccess OrgAccess
+type KeyInvalidator interface {
+	Invalidate(ctx context.Context, prefix string) error
 }
 
-func NewService(repo Repository, auditWriter audit.Writer, orgAccess OrgAccess) *Service {
+type Service struct {
+	repo           Repository
+	audit          audit.Writer
+	orgAccess      OrgAccess
+	keyInvalidator KeyInvalidator
+}
+
+func NewService(repo Repository, auditWriter audit.Writer, orgAccess OrgAccess, keyInvalidator KeyInvalidator) *Service {
 	return &Service{
-		repo:      repo,
-		audit:     auditWriter,
-		orgAccess: orgAccess,
+		repo:           repo,
+		audit:          auditWriter,
+		orgAccess:      orgAccess,
+		keyInvalidator: keyInvalidator,
 	}
 }
 
@@ -263,6 +269,8 @@ func (s *Service) RevokeAPIKey(ctx context.Context, orgID, serviceID, keyID, use
 		IPAddress:    ip,
 	})
 
+	s.invalidateKeyCache(ctx, revoked.Prefix)
+
 	resp := toAPIKeyResponse(revoked)
 	return &resp, nil
 }
@@ -320,6 +328,8 @@ func (s *Service) RotateAPIKey(ctx context.Context, orgID, serviceID, keyID, use
 		IPAddress: ip,
 	})
 
+	s.invalidateKeyCache(ctx, oldKey.Prefix)
+
 	return &CreateAPIKeyResponse{
 		ID:        stored.ID,
 		ServiceID: stored.ServiceID,
@@ -358,6 +368,13 @@ func (s *Service) writeAudit(ctx context.Context, event audit.Event) {
 		return
 	}
 	_ = s.audit.Write(ctx, event)
+}
+
+func (s *Service) invalidateKeyCache(ctx context.Context, prefix string) {
+	if s.keyInvalidator == nil {
+		return
+	}
+	_ = s.keyInvalidator.Invalidate(ctx, prefix)
 }
 
 func normalizeServiceName(name string) (string, error) {

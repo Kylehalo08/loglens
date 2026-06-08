@@ -19,6 +19,7 @@ type Repository interface {
 	CreateAPIKey(ctx context.Context, key *APIKey) (*APIKey, error)
 	ListAPIKeysByServiceID(ctx context.Context, orgID, serviceID string) ([]APIKey, error)
 	GetAPIKeyByID(ctx context.Context, orgID, serviceID, keyID string) (*APIKey, error)
+	GetActiveAPIKeyByPrefix(ctx context.Context, prefix string) (*APIKey, error)
 	RevokeAPIKey(ctx context.Context, orgID, serviceID, keyID string) (*APIKey, error)
 	RotateAPIKey(ctx context.Context, oldKey, newKey *APIKey) (*APIKey, error)
 }
@@ -284,6 +285,39 @@ func (r *PostgresRepository) GetAPIKeyByID(ctx context.Context, orgID, serviceID
 
 	key := &APIKey{}
 	err := r.pool.QueryRow(ctx, query, keyID, serviceID, orgID).Scan(
+		&key.ID,
+		&key.ServiceID,
+		&key.OrgID,
+		&key.Prefix,
+		&key.KeyHash,
+		&key.Label,
+		&key.CreatedBy,
+		&key.CreatedAt,
+		&key.RevokedAt,
+		&key.LastUsedAt,
+		&key.RotatedFromID,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrAPIKeyNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return key, nil
+}
+
+func (r *PostgresRepository) GetActiveAPIKeyByPrefix(ctx context.Context, prefix string) (*APIKey, error) {
+	const query = `
+		SELECT k.id, k.service_id, k.org_id, k.prefix, k.key_hash, COALESCE(k.label, ''),
+		       k.created_by, k.created_at, k.revoked_at, k.last_used_at, COALESCE(k.rotated_from_id::text, '')
+		FROM service_api_keys k
+		INNER JOIN services s ON s.id = k.service_id AND s.deleted_at IS NULL
+		WHERE k.prefix = $1 AND k.revoked_at IS NULL
+	`
+
+	key := &APIKey{}
+	err := r.pool.QueryRow(ctx, query, prefix).Scan(
 		&key.ID,
 		&key.ServiceID,
 		&key.OrgID,

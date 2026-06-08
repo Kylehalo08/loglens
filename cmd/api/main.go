@@ -8,9 +8,12 @@ import (
 	"loglens/internal/audit"
 	"loglens/internal/auth"
 	"loglens/internal/db"
+	"loglens/internal/ingest"
 	"loglens/internal/middleware"
 	"loglens/internal/org"
 	appsvc "loglens/internal/service"
+	"loglens/internal/stream"
+	"loglens/internal/telemetry"
 	"loglens/internal/user"
 
 	"github.com/joho/godotenv"
@@ -55,13 +58,21 @@ func main() {
 
 	auditWriter := audit.NewPostgresWriter(pool)
 	svcRepo := appsvc.NewPostgresRepository(pool)
-	svcService := appsvc.NewService(svcRepo, auditWriter, orgService)
+	keyLookup := ingest.NewKeyLookup(svcRepo)
+	keyCache := auth.NewAPIKeyCache(redisStore, keyLookup)
+	svcService := appsvc.NewService(svcRepo, auditWriter, orgService, keyCache)
 	svcHandler := appsvc.NewHandler(svcService)
+
+	logRepo := telemetry.NewRepository(pool)
+	logHandler := telemetry.NewHandler(logRepo)
+	streamHandler := stream.NewHandler(redisStore, svcService)
 
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.Logger())
+
+	e.GET("/health", logHandler.Health)
 
 	authGroup := e.Group("/auth")
 	authGroup.POST("/register", userHandler.Register)
@@ -81,6 +92,8 @@ func main() {
 	servicesGroup := orgsGroup.Group("/:id/services", appsvc.RequireOrgMember(orgService))
 	servicesGroup.GET("", svcHandler.ListServices)
 	servicesGroup.GET("/:serviceId", svcHandler.GetService)
+	servicesGroup.GET("/:serviceId/logs/:logId", logHandler.GetLog)
+	servicesGroup.GET("/:serviceId/logs/stream", streamHandler.StreamServiceLogs)
 
 	servicesWriteGroup := servicesGroup.Group("", appsvc.RequireOrgDeveloper(orgService))
 	servicesWriteGroup.POST("", svcHandler.CreateService)
