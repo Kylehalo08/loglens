@@ -49,3 +49,26 @@ func IsValidSeverity(severity string) bool {
 func ServiceChannel(serviceID string) string {
 	return "logs:service:" + serviceID
 }
+
+type SearchFilters struct {
+	OrgID      string
+	ServiceIDs []string
+	Severities []string
+	From       *time.Time
+	To         *time.Time
+	Query      string
+	Page       int
+	Limit      int
+}
+
+type Pagination struct {
+	Page       int   `json:"page"`
+	Limit      int   `json:"limit"`
+	Total      int64 `json:"total"`
+	TotalPages int   `json:"total_pages"`
+}
+
+type SearchResult struct {
+	Logs       []LogEntry `json:"logs"`
+	Pagination Pagination `json:"pagination"`
+}

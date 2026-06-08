@@ -88,6 +88,8 @@ func main() {
 	orgsGroup.GET("/:id", orgHandler.GetOrganization)
 	orgsGroup.POST("/:id/invites", orgHandler.SendEmailInvite, org.RequireOrgAdmin(orgService))
 	orgsGroup.POST("/:id/invite-codes", orgHandler.GenerateInviteCode, org.RequireOrgAdmin(orgService))
+	orgsGroup.GET("/:id/logs/search", logHandler.SearchLogs, appsvc.RequireOrgMember(orgService))
+	orgsGroup.GET("/:id/logs/:logId", logHandler.GetLogByOrg, appsvc.RequireOrgMember(orgService))
 
 	servicesGroup := orgsGroup.Group("/:id/services", appsvc.RequireOrgMember(orgService))
 	servicesGroup.GET("", svcHandler.ListServices)

@@ -53,6 +53,8 @@ Success:
 
 | Method | Path | Role | Description |
 |--------|------|------|-------------|
+| GET | /orgs/:id/logs/search | Member | Search logs (FR10–FR11) — see search.md |
+| GET | /orgs/:id/logs/:logId | Member | Get log by ID, org scope (FR12) |
 | GET | /orgs/:id/services/:serviceId/logs/:logId | Member | Get log by ID (FR8) |
 | GET | /orgs/:id/services/:serviceId/logs/stream | Member | WebSocket live stream (FR9) |
 | GET | /health | No | Health check |
@@ -177,6 +179,6 @@ curl -s http://localhost:8080/orgs/$ORG_ID/services/$SERVICE_ID/logs/$LOG_ID \
 
 - Batch ingest endpoint
 - `last_used_at` update on API key use
-- Full-text search API (FR10 — schema/index ready)
+- Metadata field search (message FTS only; see search.md)
 - Partitioned logs table for long retention
 - Ingestor/consumer Docker services in compose (run via `go run` for now)

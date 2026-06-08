@@ -35,6 +35,7 @@ When adding a new feature, create a `.md` file with:
 | organisation.md    | implemented | Orgs, members, invites, RBAC roles                 |
 | services.md        | implemented | Service CRUD, API keys, audit events               |
 | telemetry.md       | implemented | Log ingest, Kafka, storage, WebSocket stream       |
+| search.md          | implemented | Structured log search, filters, pagination         |
 
 
 
