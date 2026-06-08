@@ -5,10 +5,12 @@ import (
 	"log"
 	"os"
 
+	"loglens/internal/audit"
 	"loglens/internal/auth"
 	"loglens/internal/db"
 	"loglens/internal/middleware"
 	"loglens/internal/org"
+	appsvc "loglens/internal/service"
 	"loglens/internal/user"
 
 	"github.com/joho/godotenv"
@@ -39,17 +41,22 @@ func main() {
 	repo := user.NewPostgresRepository(pool)
 	cache := user.NewRedisRefreshCache(redisStore)
 
-	service, err := user.NewService(repo, tokenService, cache)
+	userService, err := user.NewService(repo, tokenService, cache)
 	if err != nil {
 		log.Fatalf("failed to initialize user service: %v", err)
 	}
 
-	userHandler := user.NewHandler(service)
+	userHandler := user.NewHandler(userService)
 
 	orgRepo := org.NewPostgresRepository(pool)
 	orgCache := org.NewRedisInviteCache(redisStore)
 	orgService := org.NewService(orgRepo, tokenService, orgCache)
 	orgHandler := org.NewHandler(orgService)
+
+	auditWriter := audit.NewPostgresWriter(pool)
+	svcRepo := appsvc.NewPostgresRepository(pool)
+	svcService := appsvc.NewService(svcRepo, auditWriter, orgService)
+	svcHandler := appsvc.NewHandler(svcService)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -70,6 +77,19 @@ func main() {
 	orgsGroup.GET("/:id", orgHandler.GetOrganization)
 	orgsGroup.POST("/:id/invites", orgHandler.SendEmailInvite, org.RequireOrgAdmin(orgService))
 	orgsGroup.POST("/:id/invite-codes", orgHandler.GenerateInviteCode, org.RequireOrgAdmin(orgService))
+
+	servicesGroup := orgsGroup.Group("/:id/services", appsvc.RequireOrgMember(orgService))
+	servicesGroup.GET("", svcHandler.ListServices)
+	servicesGroup.GET("/:serviceId", svcHandler.GetService)
+
+	servicesWriteGroup := servicesGroup.Group("", appsvc.RequireOrgDeveloper(orgService))
+	servicesWriteGroup.POST("", svcHandler.CreateService)
+	servicesWriteGroup.PATCH("/:serviceId", svcHandler.UpdateService)
+	servicesWriteGroup.DELETE("/:serviceId", svcHandler.DeleteService)
+	servicesWriteGroup.POST("/:serviceId/api-keys", svcHandler.GenerateAPIKey)
+	servicesWriteGroup.GET("/:serviceId/api-keys", svcHandler.ListAPIKeys)
+	servicesWriteGroup.DELETE("/:serviceId/api-keys/:keyId", svcHandler.RevokeAPIKey)
+	servicesWriteGroup.POST("/:serviceId/api-keys/:keyId/rotate", svcHandler.RotateAPIKey)
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -344,6 +344,17 @@ func (r *PostgresRepository) GetInviteCodeByCode(ctx context.Context, code strin
 	return inviteCode, nil
 }
 
-func (r *PostgresRepository) CountServicesByOrgID(_ context.Context, _ string) (int, error) {
-	return 0, nil
+func (r *PostgresRepository) CountServicesByOrgID(ctx context.Context, orgID string) (int, error) {
+	const query = `
+		SELECT COUNT(*)
+		FROM services
+		WHERE org_id = $1 AND deleted_at IS NULL
+	`
+
+	var count int
+	if err := r.pool.QueryRow(ctx, query, orgID).Scan(&count); err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
