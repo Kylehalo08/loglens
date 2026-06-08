@@ -13,7 +13,7 @@ Local development stack with Postgres (required) and Redis (optional). Environme
 |----------|-----------------|-------|--------------------------|
 | postgres | postgres:16     | 5432  | loglens / loglens / loglens |
 | redis    | redis:7         | 6379  | no auth                  |
-| kafka    | redpanda v24.2.4 (Kafka API) | 9092 | no auth (dev) |
+| kafka    | redpanda v24.2.4 (Kafka API) | 9092 | no auth (dev); default topic retention 6h; volume `redpanda_data` |
 
 Start:
 ```bash
