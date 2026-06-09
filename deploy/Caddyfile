@@ -1,0 +1,19 @@
+# Replace with your email for Let's Encrypt expiry notices.
+{
+	email admin@madhavmaheshwaricreations.in
+}
+
+# Main API — auth, orgs, services, search, WebSocket stream
+api.madhavmaheshwaricreations.in {
+	reverse_proxy 127.0.0.1:8080
+}
+
+# Log ingestor — API key auth, Kafka produce
+ingest.madhavmaheshwaricreations.in {
+	reverse_proxy 127.0.0.1:8081
+}
+
+# Apex + www → API health (swap for a static landing page later)
+madhavmaheshwaricreations.in, www.madhavmaheshwaricreations.in {
+	redir https://api.madhavmaheshwaricreations.in/health permanent
+}

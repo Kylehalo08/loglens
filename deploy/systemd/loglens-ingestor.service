@@ -1,0 +1,25 @@
+[Unit]
+Description=LogLens Ingestor (API key auth, Kafka produce)
+Documentation=https://github.com/Kylehalo08/loglens
+After=network-online.target docker.service loglens-api.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=loglens
+Group=loglens
+WorkingDirectory=/opt/loglens
+EnvironmentFile=/etc/loglens/env
+ExecStart=/opt/loglens/bin/loglens-ingestor
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65535
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/loglens
+
+[Install]
+WantedBy=multi-user.target
