@@ -95,11 +95,13 @@ Retention goroutine (in consumer):
 ## Go SDK
 
 ```go
-import "loglens/sdk/go/loglens"
+import "github.com/Kylehalo08/loglens/sdk/go/loglens"
 
 client := loglens.NewClient(os.Getenv("LOGLENS_API_KEY"))
 _ = client.Error(ctx, "payment failed", map[string]any{"order_id": "123"})
 ```
+
+Install: `go get github.com/Kylehalo08/loglens/sdk/go/loglens@v0.1.0` — see `sdk/go/loglens/README.md`.
 
 Env: `INGESTOR_URL` or `LOGLENS_INGESTOR_URL` (default `http://localhost:8081`).
 
