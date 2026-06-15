@@ -5,9 +5,10 @@ import (
 	"log"
 	"os"
 
+	"loglens/internal/auth"
 	"loglens/internal/db"
 	"loglens/internal/ingest"
-	"loglens/internal/auth"
+	"loglens/internal/middleware"
 	appsvc "loglens/internal/service"
 	"loglens/internal/telemetry"
 
@@ -44,6 +45,7 @@ func main() {
 	e.HideBanner = true
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.Logger())
+	e.Use(middleware.CORS())
 
 	e.GET("/health", handler.Health)
 	e.POST("/v1/logs", handler.IngestLog)

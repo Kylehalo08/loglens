@@ -71,6 +71,7 @@ func main() {
 	e.HideBanner = true
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.Logger())
+	e.Use(middleware.CORS())
 
 	e.GET("/health", logHandler.Health)
 
