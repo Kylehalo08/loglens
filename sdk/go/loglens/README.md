@@ -107,11 +107,11 @@ replace github.com/Kylehalo08/loglens/sdk/go/loglens => /path/to/loglens/sdk/go/
 
 ## Releases
 
-Tag the repository (from repo root):
+Nested modules need a **prefixed tag** (from repo root):
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag sdk/go/loglens/v0.1.0
+git push origin sdk/go/loglens/v0.1.0
 ```
 
 Consumers install with:
@@ -119,3 +119,5 @@ Consumers install with:
 ```bash
 go get github.com/Kylehalo08/loglens/sdk/go/loglens@v0.1.0
 ```
+
+Do **not** use a root `v0.1.0` tag only — `go get` will not find the SDK package.
