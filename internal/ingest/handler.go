@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 	"loglens/internal/auth"
+	"loglens/internal/ratelimit"
 	"loglens/internal/telemetry"
 	"loglens/pkg/response"
 
@@ -16,12 +17,16 @@ import (
 type Handler struct {
 	keyCache *auth.APIKeyCache
 	producer *telemetry.Producer
+	limiter  *ratelimit.Limiter
+	limits   ratelimit.Config
 }
 
-func NewHandler(keyCache *auth.APIKeyCache, producer *telemetry.Producer) *Handler {
+func NewHandler(keyCache *auth.APIKeyCache, producer *telemetry.Producer, limiter *ratelimit.Limiter, limits ratelimit.Config) *Handler {
 	return &Handler{
 		keyCache: keyCache,
 		producer: producer,
+		limiter:  limiter,
+		limits:   limits,
 	}
 }
 
@@ -40,6 +45,12 @@ func (h *Handler) IngestLog(c echo.Context) error {
 			return response.Error(c, http.StatusUnauthorized, "api key revoked")
 		default:
 			return response.Error(c, http.StatusUnauthorized, "invalid api key")
+		}
+	}
+
+	if err := h.limiter.AllowIngest(c.Request().Context(), resolved.OrgID, h.limits); err != nil {
+		if errors.Is(err, ratelimit.ErrRateLimited) {
+			return response.Error(c, http.StatusTooManyRequests, "log ingest rate limit exceeded")
 		}
 	}
 

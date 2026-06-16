@@ -11,6 +11,7 @@ import (
 	"loglens/internal/ingest"
 	"loglens/internal/middleware"
 	"loglens/internal/org"
+	"loglens/internal/ratelimit"
 	appsvc "loglens/internal/service"
 	"loglens/internal/stream"
 	"loglens/internal/telemetry"
@@ -35,6 +36,8 @@ func main() {
 	defer pool.Close()
 
 	redisStore := db.ConnectRedis(ctx)
+	rateLimitCfg := ratelimit.LoadConfig()
+	rateLimiter := ratelimit.NewLimiter(redisStore, rateLimitCfg)
 
 	tokenService, err := auth.NewJWTService()
 	if err != nil {
@@ -75,13 +78,13 @@ func main() {
 
 	e.GET("/health", logHandler.Health)
 
-	authGroup := e.Group("/auth")
+	authGroup := e.Group("/auth", middleware.RateLimitByIP(rateLimiter, "auth", rateLimitCfg.AuthPerIPMinute))
 	authGroup.POST("/register", userHandler.Register)
 	authGroup.POST("/login", userHandler.Login)
 	authGroup.POST("/refresh", userHandler.Refresh)
 	authGroup.POST("/logout", userHandler.Logout, middleware.RequireAuth(tokenService))
 
-	orgsGroup := e.Group("/orgs", middleware.RequireAuth(tokenService))
+	orgsGroup := e.Group("/orgs", middleware.RequireAuth(tokenService), middleware.RateLimitByUser(rateLimiter, "api-user", rateLimitCfg.APIPerUserMinute), middleware.RateLimitByIP(rateLimiter, "api-ip", rateLimitCfg.APIPerIPMinute))
 	orgsGroup.POST("", orgHandler.CreateOrganization)
 	orgsGroup.GET("", orgHandler.ListMyOrgs)
 	orgsGroup.POST("/join/token", orgHandler.JoinViaToken)

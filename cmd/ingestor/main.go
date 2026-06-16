@@ -9,6 +9,7 @@ import (
 	"loglens/internal/db"
 	"loglens/internal/ingest"
 	"loglens/internal/middleware"
+	"loglens/internal/ratelimit"
 	appsvc "loglens/internal/service"
 	"loglens/internal/telemetry"
 
@@ -31,6 +32,8 @@ func main() {
 	defer pool.Close()
 
 	redisStore := db.ConnectRedis(ctx)
+	rateLimitCfg := ratelimit.LoadConfig()
+	rateLimiter := ratelimit.NewLimiter(redisStore, rateLimitCfg)
 
 	svcRepo := appsvc.NewPostgresRepository(pool)
 	keyLookup := ingest.NewKeyLookup(svcRepo)
@@ -39,13 +42,14 @@ func main() {
 	producer := telemetry.NewProducer()
 	defer producer.Close()
 
-	handler := ingest.NewHandler(keyCache, producer)
+	handler := ingest.NewHandler(keyCache, producer, rateLimiter, rateLimitCfg)
 
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.Logger())
 	e.Use(middleware.CORS())
+	e.Use(middleware.RateLimitByIP(rateLimiter, "ingest", rateLimitCfg.IngestRequestsPerIPMinute))
 
 	e.GET("/health", handler.Health)
 	e.POST("/v1/logs", handler.IngestLog)
