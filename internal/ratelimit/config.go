@@ -14,6 +14,7 @@ type Config struct {
 	APIPerIPMinute         int
 	APIPerUserMinute       int
 	IngestRequestsPerIPMinute int
+	AIRequestsPerOrgDay   int
 }
 
 func LoadConfig() Config {
@@ -25,11 +26,12 @@ func LoadConfig() Config {
 		APIPerIPMinute:            envInt("API_REQUESTS_PER_IP_MINUTE", 120),
 		APIPerUserMinute:          envInt("API_REQUESTS_PER_USER_MINUTE", 300),
 		IngestRequestsPerIPMinute: envInt("INGEST_REQUESTS_PER_IP_MINUTE", 60),
+		AIRequestsPerOrgDay:       envInt("AI_REQUESTS_PER_ORG_DAY", 10),
 	}
 
 	if cfg.Enabled {
-		log.Printf("rate limits: ingest %d/hr %d/day per org, ingest %d/min per IP, auth %d/min per IP, api %d/min per IP, %d/min per user",
-			cfg.IngestPerOrgHour, cfg.IngestPerOrgDay, cfg.IngestRequestsPerIPMinute, cfg.AuthPerIPMinute, cfg.APIPerIPMinute, cfg.APIPerUserMinute)
+		log.Printf("rate limits: ingest %d/hr %d/day per org, ingest %d/min per IP, auth %d/min per IP, api %d/min per IP, %d/min per user, ai %d/day per org",
+			cfg.IngestPerOrgHour, cfg.IngestPerOrgDay, cfg.IngestRequestsPerIPMinute, cfg.AuthPerIPMinute, cfg.APIPerIPMinute, cfg.APIPerUserMinute, cfg.AIRequestsPerOrgDay)
 	}
 
 	return cfg

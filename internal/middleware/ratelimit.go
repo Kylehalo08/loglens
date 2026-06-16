@@ -7,6 +7,7 @@ import (
 	"loglens/internal/ratelimit"
 	"loglens/pkg/response"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -29,6 +30,24 @@ func RateLimitByUser(limiter *ratelimit.Limiter, prefix string, limit int) echo.
 				return next(c)
 			}
 			if err := limiter.Allow(c.Request().Context(), ratelimit.UserMinuteKey(prefix, userID), limit, time.Minute); err != nil {
+				return mapRateLimitError(c, err)
+			}
+			return next(c)
+		}
+	}
+}
+
+func RateLimitByOrgPerDay(limiter *ratelimit.Limiter, prefix string, limit int) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			orgID := c.Param("id")
+			if orgID == "" {
+				return next(c)
+			}
+			if _, err := uuid.Parse(orgID); err != nil {
+				return response.Error(c, 400, "invalid organization id")
+			}
+			if err := limiter.Allow(c.Request().Context(), ratelimit.OrgDayKey(prefix, orgID), limit, 24*time.Hour); err != nil {
 				return mapRateLimitError(c, err)
 			}
 			return next(c)

@@ -73,3 +73,8 @@ func UserMinuteKey(prefix, userID string) string {
 	bucket := time.Now().UTC().Format("200601021504")
 	return fmt.Sprintf("rl:%s:user:%s:min:%s", prefix, userID, bucket)
 }
+
+func OrgDayKey(prefix, orgID string) string {
+	bucket := time.Now().UTC().Format("20060102")
+	return fmt.Sprintf("rl:%s:org:%s:day:%s", prefix, orgID, bucket)
+}

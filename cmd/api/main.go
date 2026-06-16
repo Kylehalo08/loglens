@@ -12,6 +12,7 @@ import (
 	"loglens/internal/middleware"
 	"loglens/internal/org"
 	"loglens/internal/ratelimit"
+	"loglens/internal/ai"
 	appsvc "loglens/internal/service"
 	"loglens/internal/stream"
 	"loglens/internal/telemetry"
@@ -70,6 +71,21 @@ func main() {
 	logHandler := telemetry.NewHandler(logRepo)
 	streamHandler := stream.NewHandler(redisStore, svcService)
 
+	gemini, gerr := ai.NewGeminiClient()
+	if gerr != nil {
+		log.Printf("warning: gemini disabled: %v", gerr)
+	}
+	openrouter, oerr := ai.NewOpenRouterClient()
+	if oerr != nil {
+		log.Printf("warning: openrouter disabled: %v", oerr)
+	}
+
+	var aiHandler *ai.Handler
+	if gemini != nil && openrouter != nil {
+		orch := ai.NewOrchestrator(gemini, openrouter)
+		aiHandler = ai.NewHandler(orch, logRepo)
+	}
+
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(echomiddleware.Recover())
@@ -94,6 +110,13 @@ func main() {
 	orgsGroup.POST("/:id/invite-codes", orgHandler.GenerateInviteCode, org.RequireOrgAdmin(orgService))
 	orgsGroup.GET("/:id/logs/search", logHandler.SearchLogs, appsvc.RequireOrgMember(orgService))
 	orgsGroup.GET("/:id/logs/:logId", logHandler.GetLogByOrg, appsvc.RequireOrgMember(orgService))
+
+	if aiHandler != nil {
+		aiGroup := orgsGroup.Group("/:id/ai", appsvc.RequireOrgMember(orgService), middleware.RateLimitByOrgPerDay(rateLimiter, "ai", rateLimitCfg.AIRequestsPerOrgDay))
+		aiGroup.POST("/nlq", aiHandler.NLQ)
+		aiGroup.POST("/summarize", aiHandler.Summarize)
+		aiGroup.POST("/investigate", aiHandler.Investigate, appsvc.RequireOrgDeveloper(orgService))
+	}
 
 	servicesGroup := orgsGroup.Group("/:id/services", appsvc.RequireOrgMember(orgService))
 	servicesGroup.GET("", svcHandler.ListServices)
