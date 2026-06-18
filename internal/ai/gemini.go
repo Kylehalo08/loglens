@@ -29,7 +29,7 @@ func NewGeminiClient() (*GeminiClient, error) {
 		apiKey:  key,
 		baseURL: "https://generativelanguage.googleapis.com/v1beta",
 		httpClient: &http.Client{
-			Timeout: 12 * time.Second,
+			Timeout: 25 * time.Second,
 		},
 	}, nil
 }

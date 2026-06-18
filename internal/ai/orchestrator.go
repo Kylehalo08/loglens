@@ -42,8 +42,8 @@ func (o *Orchestrator) RunJSON(ctx context.Context, req GenerateRequest, fallbac
 }
 
 func (o *Orchestrator) tryProvider(ctx context.Context, client Client, req GenerateRequest, out any) (RunResult, error) {
-	// Short timeout per provider to keep UI responsive.
-	pctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	// Per-provider timeout; HTTP clients use a slightly higher limit.
+	pctx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	result, err := client.Generate(pctx, req)

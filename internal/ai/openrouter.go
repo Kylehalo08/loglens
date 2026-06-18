@@ -29,7 +29,7 @@ func NewOpenRouterClient() (*OpenRouterClient, error) {
 		apiKey:  key,
 		baseURL: "https://openrouter.ai/api/v1",
 		httpClient: &http.Client{
-			Timeout: 12 * time.Second,
+			Timeout: 25 * time.Second,
 		},
 	}, nil
 }
